@@ -5,10 +5,10 @@ import morgan from "morgan";
 import { connectDB } from "./config/db.js";
 import { notFound } from "./middleware/notFound.js";
 import { errorHandler } from "./middleware/errorHandler.js";
-import authRoutes from "./routes/authRoutes.js";
-import userRoutes from "./routes/userRoutes.js";
-import questionRoutes from "./routes/questionRoutes.js";
-import feedRoutes from "./routes/feedRoutes.js";
+import authRoutes from "./api/authRoutes.js";
+import userRoutes from "./api/userRoutes.js";
+import questionRoutes from "./api/questionRoutes.js";
+import feedRoutes from "./api/feedRoutes.js";
 
 const app = express();
 app.set("trust proxy", 1);
@@ -17,7 +17,14 @@ app.use(cors());
 app.use(express.json());
 app.use(morgan("dev"));
 
-app.get("/health", (_req, res) => res.json({ ok: true }));
+app.use("/api", async (_req, _res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
 
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
@@ -31,7 +38,8 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 3000;
 
-await connectDB();
-
 export default app;
-// app.listen(PORT, () => console.log(`whisper listening on ${PORT}`));
+
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => console.log(`whisper listening on ${PORT}`));
+}
